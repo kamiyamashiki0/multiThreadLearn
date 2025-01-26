@@ -13,7 +13,7 @@ void consum(int n)
     {
         std::unique_lock<std::mutex> lck(mux);
         cv.wait(lck, []()
-                { return cargo != 0; });//第二个参数为false时才会阻塞，当被其他线程唤醒时，若第二个参数仍为false，则继续阻塞
+                { return cargo != 0; });//第二个参数为false时才会阻塞，当被其他线程唤醒时，若第二个参数仍为false，则继续阻塞,在阻塞期间如果由false变为true，仍需要等待通知才能被唤醒
         std::cout << cargo << std::endl;
         cargo = 0;
     }
