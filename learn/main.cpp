@@ -1,13 +1,19 @@
 #include <iostream>
 #include <chrono>
 
+inline void fun(int x)
+{
+    while (x--);
+}
 int main()
 {
+    int k = 100000;
     auto start = std::chrono::high_resolution_clock::now();
 
-        for (int j = 0; j < 1000; j++)
+        for (int j = 0; j < 10000; j++)
         {
-            std::cout << j << std::endl;
+            fun(k);
+
         }
 
     auto stop = std::chrono::high_resolution_clock::now();

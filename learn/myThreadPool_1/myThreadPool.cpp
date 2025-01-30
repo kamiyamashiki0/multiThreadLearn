@@ -11,7 +11,14 @@
 // {
 //     callback();
 // }
-
+template <typename T>
+class task
+{
+public:
+    task(T (*f)(int), int x) : fun(f), a(x) {}
+    T (*fun)(int);
+    int a;
+};
 /////暂时无法完成处理可变参数的任务////////
 ////////////////////////////////////////
 template <typename T> // 后续改进:改为单例、使用function，bind
@@ -23,14 +30,14 @@ public:
     // 析构函数
     ~myThreadPool();
     // 向任务队列添加任务的函数
-    void addTask(T (*)()); // Args已经被声明为了一个包，那么在使用的时候就要展开，只写Args是没有意义的
+    void addTask(T (*)(int), int); // Args已经被声明为了一个包，那么在使用的时候就要展开，只写Args是没有意义的
 
 private:
     // 工作队列
     std::vector<std::thread> workers_v;
     // 任务队列
     //////// 任务函数的泛型可以用function实现/////////
-    std::queue<T (*)()> task_queue; // auto只能用作类型推导，不能用作模板参数类型的一部分，模板参数中必须显示指定类型
+    std::queue<task<T>> task_queue; // auto只能用作类型推导，不能用作模板参数类型的一部分，模板参数中必须显示指定类型
     // 线程池关闭标志
     bool stop;
     // 任务函数
@@ -56,6 +63,7 @@ myThreadPool<T>::myThreadPool(int num) : stop(false)
         /////////////////////// workers_v.emplace_back(run, *this);thread默认按值传递(?)
         workers_v.emplace_back(run, std::ref(*this)); // 直接在容器尾部创建，省去了拷贝或移动的开销
     }
+    workers_v.reserve(16);
 }
 
 template <typename T>
@@ -77,19 +85,18 @@ void myThreadPool<T>::work()
                                                           ///////注意与stop取或，否则在析构时若任务队列为空通知后仍会阻塞
         if (stop)
             continue;
-        T(*task)
-        () = task_queue.front();
+        task<T> t= task_queue.front();
         task_queue.pop();
         lck.unlock(); //////别拿着锁干活//////也可以加个大括号来划分作用域
-        task();
+        t.fun(t.a);
     }
 }
 
 template <typename T>
-void myThreadPool<T>::addTask(T (*task)())
+void myThreadPool<T>::addTask(T (*task)(int), int a)
 {
     std::lock_guard<std::mutex> lck(mux);
-    task_queue.push(task);
+    task_queue.emplace(task, a);
     cv.notify_one(); // 当线程被通知唤醒是，该线程会从条件变量的阻塞队列移动到锁的等待队列，它会先去尝试获得锁，直到它获得了锁，才会去判断pred，如果为true则执行，如果为false则释放锁等待下次通知
     // pred的判断永远是在持有锁的状态下进行的
 }
@@ -97,7 +104,7 @@ void myThreadPool<T>::addTask(T (*task)())
 template <typename T>
 myThreadPool<T>::~myThreadPool()
 {
-    //while (!task_queue.empty()); // 防止通知所有线程时空闲线程数小于任务数
+    while (!task_queue.empty()); // 防止通知所有线程时空闲线程数小于任务数
     stop = true;
     cv.notify_all(); // 只是通知，但是当任务队列为空时仍然会阻塞
     for (auto &ww : workers_v)

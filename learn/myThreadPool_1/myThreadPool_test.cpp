@@ -1,23 +1,29 @@
 #include "myThreadPool.cpp"
 #include <iostream>
 #include <chrono>
-int i;
-std::mutex mux;
-void fun()
+// int i;
+// std::mutex mux;
+// void fun()
+// {
+//     std::lock_guard<std::mutex> lck(mux); // i是共享资源，需要加锁
+//     std::cout << i << std::endl;
+//     i++;
+// }
+void fun(int x)
 {
-    std::lock_guard<std::mutex> lck(mux); // i是共享资源，需要加锁
-    std::cout << i << std::endl;
-    i++;
+
+    while(x--);
 }
 
 int main()
 {
+    int k = 100000;
     auto start = std::chrono::high_resolution_clock::now();
-    {
-        myThreadPool<void> pool(16);
-        for (int j = 0; j < 1000; j++)
+    {  
+        myThreadPool<void> pool(8);
+        for (int j = 0; j < 10000; j++)
         {
-            pool.addTask(fun);
+            pool.addTask(fun,k);
         }
     }
     auto stop = std::chrono::high_resolution_clock::now();
