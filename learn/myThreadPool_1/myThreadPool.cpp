@@ -112,7 +112,7 @@ myThreadPool<T>::~myThreadPool()
             ww.join();
 }
 // 以下情况不可joinabel
-// 1.线程时默认构造的（即构造时没有加括号）
+// 1.线程是默认构造的（即构造时没有加括号）
 // 2.执行过move操作
 // 3.执行过join或detach操作
 
@@ -121,4 +121,4 @@ myThreadPool<T>::~myThreadPool()
 // 当 std::thread 对象离开作用域时，如果没有调用 join() 或 detach()，程序会触发异常终止。
 // 使用 join() 可以让主线程等待子线程完成，从而安全地销毁线程。
 // 使用 detach() 可以将线程从 std::thread 对象中分离，使其成为独立线程。调用 detach() 后，std::thread 对象不再管理该线程。
-//休息一天
+
